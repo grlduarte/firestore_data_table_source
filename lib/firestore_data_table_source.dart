@@ -12,7 +12,7 @@ class FirestoreDataTableSource<T> extends DataTableSource {
   int _rowCount = 0;
   bool _fetchedAllDocuments = false;
   bool _fetching = false;
-  final Query<T> _query;
+  Query<T> _query;
 
   /// Function used to assemble the DataRow
   final GetDataRow<T> getDataRow;
@@ -63,6 +63,14 @@ class FirestoreDataTableSource<T> extends DataTableSource {
     }
 
     _fetching = false;
+    notifyListeners();
+  }
+
+  void changeQuery(Query<T> newQuery) {
+    _query = newQuery;
+    _data.clear();
+    _rowCount = 0;
+    _fetchedAllDocuments = false;
     notifyListeners();
   }
 
