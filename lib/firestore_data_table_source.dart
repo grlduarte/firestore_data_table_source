@@ -12,15 +12,14 @@ class FirestoreDataTableSource<T> extends DataTableSource {
   List<DocumentSnapshot<T>> _data = [];
   int _rowCount = 0;
   bool _isRowCountApproximate = true;
+  bool _fetching = false;
 
   final GetDataRow<T> getDataRow;
 
   FirestoreDataTableSource({
     required Query<T> query,
     required this.getDataRow,
-  }) : _query = query {
-    _fetchData();
-  }
+  }) : _query = query;
 
   @override
   int get rowCount => _rowCount;
@@ -32,16 +31,24 @@ class FirestoreDataTableSource<T> extends DataTableSource {
   int get selectedRowCount => 0;
 
   void _fetchData() async {
+    if (_fetching) return;
+
+    _fetching = true;
     final querySnapshot = await _query.get();
     _data = querySnapshot.docs;
 
     _rowCount = _data.length;
     _isRowCountApproximate = false;
+    _fetching = false;
     notifyListeners();
   }
 
   @override
   DataRow? getRow(int index) {
+    if (_data.isEmpty) {
+      _fetchData();
+    }
+
     if (index >= _data.length) {
       return null;
     }
