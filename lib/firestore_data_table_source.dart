@@ -7,25 +7,35 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 typedef GetDataRow<T> = DataRow Function(DocumentSnapshot<T> snapshot);
 
 class FirestoreDataTableSource<T> extends DataTableSource {
+  final List<DocumentSnapshot<T>> _data = [];
+
+  int _rowCount = 0;
+  bool _fetchedAllDocuments = false;
+  bool _fetching = false;
   final Query<T> _query;
 
-  List<DocumentSnapshot<T>> _data = [];
-  int _rowCount = 0;
-  bool _isRowCountApproximate = true;
-  bool _fetching = false;
-
+  /// Function used to assemble the DataRow
   final GetDataRow<T> getDataRow;
+
+  /// Number of documents fetched at a time
+  ///
+  /// Ideally this is the same number used with the
+  /// [PaginatedDataTable.rowsPerPage] property.
+  ///
+  /// This value is optional and defaults to 10 if not specified.
+  final int pageSize;
 
   FirestoreDataTableSource({
     required Query<T> query,
     required this.getDataRow,
+    this.pageSize = 10,
   }) : _query = query;
 
   @override
   int get rowCount => _rowCount;
 
   @override
-  bool get isRowCountApproximate => _isRowCountApproximate;
+  bool get isRowCountApproximate => !_fetchedAllDocuments;
 
   @override
   int get selectedRowCount => 0;
@@ -33,21 +43,33 @@ class FirestoreDataTableSource<T> extends DataTableSource {
   void _fetchData() async {
     if (_fetching) return;
 
-    _fetching = true;
-    final querySnapshot = await _query.get();
-    _data = querySnapshot.docs;
+    if (_fetchedAllDocuments) return;
 
-    _rowCount = _data.length;
-    _isRowCountApproximate = false;
+    _fetching = true;
+    Query<T> pageQuery = _query.limit(pageSize);
+
+    if (_data.isNotEmpty) {
+      pageQuery = pageQuery.startAfterDocument(_data.last);
+    }
+
+    final QuerySnapshot<T> querySnapshot = await pageQuery.get();
+    _data.addAll(querySnapshot.docs);
+
+    if (querySnapshot.docs.length < pageSize) {
+      _fetchedAllDocuments = true;
+      _rowCount = _data.length;
+    } else {
+      _rowCount += pageSize;
+    }
+
     _fetching = false;
     notifyListeners();
   }
 
   @override
   DataRow? getRow(int index) {
-    if (_data.isEmpty) {
-      _fetchData();
-    }
+    // Load more items before getting to the end of the list
+    if (index > _data.length - pageSize) _fetchData();
 
     if (index >= _data.length) {
       return null;
