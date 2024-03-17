@@ -43,15 +43,24 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   final int rowsPerPage = 15;
+  final Query<User> baseQuery = usersRef;
+
   late FirestoreDataTableSource<User> _dataSource;
+  late Query<User> query;
+
+  int? _sortColumn;
+  bool _sortAscending = false;
 
   @override
   void initState() {
     super.initState();
 
+    query = baseQuery;
+
     _dataSource = FirestoreDataTableSource<User>(
-      query: usersRef,
+      query: query,
       getDataRow: getDataRow,
+      pageSize: rowsPerPage,
     );
   }
 
@@ -68,13 +77,59 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  void onSort(int columnIndex, bool ascending) {
+    setState(() {
+      _sortColumn = columnIndex;
+      _sortAscending = ascending;
+    });
+
+    switch (columnIndex) {
+      case 0:
+        // UserId column
+        query = baseQuery.orderBy(
+          FieldPath.documentId,
+          descending: ascending,
+        );
+        break;
+
+      case 1:
+        // Name column
+        query = baseQuery.orderBy('name', descending: ascending);
+        break;
+
+      case 2:
+        // LastName column
+        query = baseQuery.orderBy('lastName', descending: ascending);
+        break;
+
+      case 3:
+        // Birthday column
+        query = baseQuery.orderBy('birthday', descending: ascending);
+        break;
+    }
+
+    _dataSource.changeQuery(query);
+  }
+
   @override
   Widget build(BuildContext context) {
-    const columns = <DataColumn>[
-      DataColumn(label: Text('User Id')),
-      DataColumn(label: Text('Name')),
-      DataColumn(label: Text('Last Name')),
-      DataColumn(label: Text('Birthday')),
+    final columns = <DataColumn>[
+      DataColumn(
+        label: const Text('User Id'),
+        onSort: onSort,
+      ),
+      DataColumn(
+        label: const Text('Name'),
+        onSort: onSort,
+      ),
+      DataColumn(
+        label: const Text('Last Name'),
+        onSort: onSort,
+      ),
+      DataColumn(
+        label: const Text('Birthday'),
+        onSort: onSort,
+      ),
     ];
 
     return Scaffold(
@@ -87,6 +142,8 @@ class _MyHomePageState extends State<MyHomePage> {
           columns: columns,
           source: _dataSource,
           rowsPerPage: rowsPerPage,
+          sortColumnIndex: _sortColumn,
+          sortAscending: _sortAscending,
         ),
       ),
     );
