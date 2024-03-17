@@ -8,6 +8,7 @@ environment:
   flutter: ">=1.17.0"
 
 dependencies:
+  cloud_firestore: ^4.15.8
   flutter:
     sdk: flutter
 
