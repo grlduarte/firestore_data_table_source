@@ -9,7 +9,6 @@ typedef GetDataRow<T> = DataRow Function(DocumentSnapshot<T> snapshot);
 class FirestoreDataTableSource<T> extends DataTableSource {
   final List<DocumentSnapshot<T>> _data = [];
 
-  int _rowCount = 0;
   bool _fetchedAllDocuments = false;
   bool _fetching = false;
   Query<T> _query;
@@ -32,7 +31,8 @@ class FirestoreDataTableSource<T> extends DataTableSource {
   }) : _query = query;
 
   @override
-  int get rowCount => _rowCount;
+  int get rowCount =>
+      isRowCountApproximate ? _data.length + pageSize : _data.length;
 
   @override
   bool get isRowCountApproximate => !_fetchedAllDocuments;
@@ -57,9 +57,6 @@ class FirestoreDataTableSource<T> extends DataTableSource {
 
     if (querySnapshot.docs.length < pageSize) {
       _fetchedAllDocuments = true;
-      _rowCount = _data.length;
-    } else {
-      _rowCount += pageSize;
     }
 
     _fetching = false;
@@ -69,7 +66,6 @@ class FirestoreDataTableSource<T> extends DataTableSource {
   void changeQuery(Query<T> newQuery) {
     _query = newQuery;
     _data.clear();
-    _rowCount = 0;
     _fetchedAllDocuments = false;
     notifyListeners();
   }
