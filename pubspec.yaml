@@ -1,7 +1,8 @@
 name: firestore_data_table_source
-description: "A new Flutter package project."
+description: "A Flutter PaginatedDataTable that can fetch Firestore documents
+  from a Query object and filter them using a provided function."
 version: 0.0.1
-homepage:
+homepage: "https://github.com/grlduarte"
 
 environment:
   sdk: '>=2.17.1 <4.0.0'
