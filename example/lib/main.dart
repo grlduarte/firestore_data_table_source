@@ -65,6 +65,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  @override
   void dispose() {
     _filterController.dispose();
     super.dispose();
