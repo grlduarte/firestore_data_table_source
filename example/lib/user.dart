@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:faker/faker.dart';
 
 class User {
   final String name;
@@ -8,6 +9,18 @@ class User {
     required this.name,
     required this.lastName,
   });
+
+  factory User.fake() {
+    final faker = Faker();
+    final person = faker.person;
+    final birthday = faker.date.dateTime(minYear: 1950, maxYear: 2020);
+
+    return User(
+      name: person.firstName(),
+      lastName: person.lastName(),
+      birthday: birthday,
+    );
+  }
 
   factory User.fromJson(Map<String, Object?> json) => User(
         name: json['name'] as String,
