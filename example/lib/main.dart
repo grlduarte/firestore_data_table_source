@@ -44,6 +44,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final int rowsPerPage = 15;
   final Query<User> baseQuery = usersRef;
+  final TextEditingController _filterController = TextEditingController();
 
   late FirestoreDataTableSource<User> _dataSource;
   late Query<User> query;
@@ -111,6 +112,23 @@ class _MyHomePageState extends State<MyHomePage> {
     _dataSource.changeQuery(query);
   }
 
+  void onNameFilterChanged(String text) {
+    _dataSource.changeFilter((DocumentSnapshot<User> snapshot) {
+      User user = snapshot.data()!;
+
+      bool nameMatches = user.name.toLowerCase().startsWith(text.toLowerCase());
+      bool lastNameMatches =
+          user.lastName.toLowerCase().startsWith(text.toLowerCase());
+
+      return nameMatches || lastNameMatches;
+    });
+  }
+
+  void onClearFilter() {
+    _dataSource.clearFilter();
+    _filterController.clear();
+  }
+
   @override
   Widget build(BuildContext context) {
     final columns = <DataColumn>[
@@ -137,13 +155,28 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
-      body: Center(
-        child: PaginatedDataTable(
-          columns: columns,
-          source: _dataSource,
-          rowsPerPage: rowsPerPage,
-          sortColumnIndex: _sortColumn,
-          sortAscending: _sortAscending,
+      body: Container(
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView(
+          child: PaginatedDataTable(
+            source: _dataSource,
+            columns: columns,
+            header: TextField(
+              controller: _filterController,
+              decoration: InputDecoration(
+                hintText: 'Filter by Name or Last Name',
+                suffixIcon: IconButton(
+                  onPressed: onClearFilter,
+                  icon: const Icon(Icons.cancel),
+                ),
+              ),
+              onChanged: onNameFilterChanged,
+            ),
+            rowsPerPage: rowsPerPage,
+            sortColumnIndex: _sortColumn,
+            sortAscending: _sortAscending,
+          ),
         ),
       ),
     );
