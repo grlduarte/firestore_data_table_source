@@ -65,6 +65,11 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  void dispose() {
+    _filterController.dispose();
+    super.dispose();
+  }
+
   DataRow getDataRow(DocumentSnapshot<User> snapshot) {
     User user = snapshot.data()!;
 
