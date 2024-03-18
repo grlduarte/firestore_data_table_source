@@ -45,6 +45,8 @@ class _MyHomePageState extends State<MyHomePage> {
   final int rowsPerPage = 15;
   final Query<User> baseQuery = usersRef;
   final TextEditingController _filterController = TextEditingController();
+  final GlobalKey<PaginatedDataTableState> _dataTableKey =
+      GlobalKey<PaginatedDataTableState>();
 
   late FirestoreDataTableSource<User> _dataSource;
   late Query<User> query;
@@ -128,6 +130,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
       return nameMatches || lastNameMatches;
     });
+
+    // Changes the DataTable to the first page every time the filter changes
+    _dataTableKey.currentState?.pageTo(0);
   }
 
   void onClearFilter() {
@@ -166,6 +171,7 @@ class _MyHomePageState extends State<MyHomePage> {
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
           child: PaginatedDataTable(
+            key: _dataTableKey,
             source: _dataSource,
             columns: columns,
             header: TextField(
