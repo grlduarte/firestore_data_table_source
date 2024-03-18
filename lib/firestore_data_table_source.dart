@@ -4,14 +4,18 @@ import 'package:flutter/material.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+typedef FilterRow<T> = bool Function(DocumentSnapshot<T> snapshot);
+
 typedef GetDataRow<T> = DataRow Function(DocumentSnapshot<T> snapshot);
 
 class FirestoreDataTableSource<T> extends DataTableSource {
   final List<DocumentSnapshot<T>> _data = [];
+  List<DocumentSnapshot<T>> _filteredData = [];
 
   bool _fetchedAllDocuments = false;
   bool _fetching = false;
   Query<T> _query;
+  FilterRow<T>? _filter;
 
   /// Function used to assemble the DataRow
   final GetDataRow<T> getDataRow;
@@ -28,11 +32,14 @@ class FirestoreDataTableSource<T> extends DataTableSource {
     required Query<T> query,
     required this.getDataRow,
     this.pageSize = 10,
-  }) : _query = query;
+    FilterRow<T>? filter,
+  })  : _query = query,
+        _filter = filter;
 
   @override
-  int get rowCount =>
-      isRowCountApproximate ? _data.length + pageSize : _data.length;
+  int get rowCount => isRowCountApproximate
+      ? _filteredData.length + pageSize
+      : _filteredData.length;
 
   @override
   bool get isRowCountApproximate => !_fetchedAllDocuments;
@@ -54,6 +61,7 @@ class FirestoreDataTableSource<T> extends DataTableSource {
 
     final QuerySnapshot<T> querySnapshot = await pageQuery.get();
     _data.addAll(querySnapshot.docs);
+    _applyFilter();
 
     if (querySnapshot.docs.length < pageSize) {
       _fetchedAllDocuments = true;
@@ -66,19 +74,40 @@ class FirestoreDataTableSource<T> extends DataTableSource {
   void changeQuery(Query<T> newQuery) {
     _query = newQuery;
     _data.clear();
+    _filteredData.clear();
     _fetchedAllDocuments = false;
+    notifyListeners();
+  }
+
+  void _applyFilter() {
+    _filteredData = List<DocumentSnapshot<T>>.from(_data);
+
+    if (_filter != null) _filteredData.retainWhere(_filter!);
+  }
+
+  /// Apply a filter to loaded data
+  void changeFilter(FilterRow<T> filter) {
+    _filter = filter;
+    _applyFilter();
+    notifyListeners();
+  }
+
+  /// Clear all applied filters
+  void clearFilter() {
+    _filter = null;
+    _applyFilter();
     notifyListeners();
   }
 
   @override
   DataRow? getRow(int index) {
     // Load more items before getting to the end of the list
-    if (index > _data.length - pageSize) _fetchData();
+    if (index > _filteredData.length - pageSize) _fetchData();
 
-    if (index >= _data.length) {
+    if (index >= _filteredData.length) {
       return null;
     }
 
-    return getDataRow(_data[index]);
+    return getDataRow(_filteredData[index]);
   }
 }
