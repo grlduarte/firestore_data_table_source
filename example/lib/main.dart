@@ -81,7 +81,6 @@ class _MyHomePageState extends State<MyHomePage> {
         DataCell(Text(snapshot.id)),
         DataCell(Text(user.name)),
         DataCell(Text(user.lastName)),
-        DataCell(Text(user.birthday.toString())),
       ],
     );
   }
@@ -93,14 +92,6 @@ class _MyHomePageState extends State<MyHomePage> {
     });
 
     switch (columnIndex) {
-      case 0:
-        // UserId column
-        query = baseQuery.orderBy(
-          FieldPath.documentId,
-          descending: ascending,
-        );
-        break;
-
       case 1:
         // Name column
         query = baseQuery.orderBy('name', descending: ascending);
@@ -109,11 +100,6 @@ class _MyHomePageState extends State<MyHomePage> {
       case 2:
         // LastName column
         query = baseQuery.orderBy('lastName', descending: ascending);
-        break;
-
-      case 3:
-        // Birthday column
-        query = baseQuery.orderBy('birthday', descending: ascending);
         break;
     }
 
@@ -143,9 +129,8 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     final columns = <DataColumn>[
-      DataColumn(
-        label: const Text('User Id'),
-        onSort: onSort,
+      const DataColumn(
+        label: Text('User Id'),
       ),
       DataColumn(
         label: const Text('Name'),
@@ -153,10 +138,6 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       DataColumn(
         label: const Text('Last Name'),
-        onSort: onSort,
-      ),
-      DataColumn(
-        label: const Text('Birthday'),
         onSort: onSort,
       ),
     ];
