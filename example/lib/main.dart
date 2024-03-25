@@ -42,14 +42,17 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final int rowsPerPage = 15;
-  final Query<User> baseQuery = usersRef;
-  final TextEditingController _filterController = TextEditingController();
-  final GlobalKey<PaginatedDataTableState> _dataTableKey =
-      GlobalKey<PaginatedDataTableState>();
+  static final firestore = FirebaseFirestore.instance;
+  static final usersRef = firestore.collection('users').withConverter<User>(
+        fromFirestore: (snapshot, _) => User.fromJson(snapshot.data()!),
+        toFirestore: (user, _) => user.toJson(),
+      );
+
+  final int rowsPerPage = 10;
+  final _filterController = TextEditingController();
+  final _dataTableKey = GlobalKey<PaginatedDataTableState>();
 
   late FirestoreDataTableSource<User> _dataSource;
-  late Query<User> query;
 
   int? _sortColumn;
   bool _sortAscending = false;
@@ -58,10 +61,8 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
 
-    query = baseQuery;
-
     _dataSource = FirestoreDataTableSource<User>(
-      query: query,
+      query: usersRef,
       getDataRow: getDataRow,
       pageSize: rowsPerPage,
     );
@@ -91,19 +92,21 @@ class _MyHomePageState extends State<MyHomePage> {
       _sortAscending = ascending;
     });
 
+    Query<User>? query;
+
     switch (columnIndex) {
       case 1:
         // Name column
-        query = baseQuery.orderBy('name', descending: ascending);
+        query = usersRef.orderBy('name', descending: ascending);
         break;
 
       case 2:
         // LastName column
-        query = baseQuery.orderBy('lastName', descending: ascending);
+        query = usersRef.orderBy('lastName', descending: ascending);
         break;
     }
 
-    _dataSource.changeQuery(query);
+    if (query != null) _dataSource.changeQuery(query);
   }
 
   void onNameFilterChanged(String text) {
