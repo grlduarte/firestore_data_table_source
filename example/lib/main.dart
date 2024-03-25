@@ -129,6 +129,18 @@ class _MyHomePageState extends State<MyHomePage> {
     _filterController.clear();
   }
 
+  Future<void> populateFirestore({int numberOfUsers = 20}) async {
+    final batch = firestore.batch();
+
+    for (int i = 0; i < numberOfUsers; i++) {
+      final user = User.fake();
+      final userRef = usersRef.doc();
+      batch.set(userRef, user);
+    }
+
+    return batch.commit();
+  }
+
   @override
   Widget build(BuildContext context) {
     final columns = <DataColumn>[
@@ -158,6 +170,21 @@ class _MyHomePageState extends State<MyHomePage> {
             key: _dataTableKey,
             source: _dataSource,
             columns: columns,
+            actions: <Widget>[
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                tooltip: "Refresh data",
+                onPressed: () => _dataSource.clearData(),
+              ),
+              IconButton(
+                icon: const Icon(Icons.add),
+                tooltip: "Add users and refresh",
+                onPressed: () async {
+                  populateFirestore(numberOfUsers: rowsPerPage);
+                  _dataSource.clearData();
+                },
+              ),
+            ],
             header: TextField(
               controller: _filterController,
               decoration: InputDecoration(
