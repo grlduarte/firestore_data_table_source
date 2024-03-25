@@ -71,6 +71,17 @@ class FirestoreDataTableSource<T> extends DataTableSource {
     notifyListeners();
   }
 
+  /// Clear all loaded data
+  ///
+  /// Note that when associated with [PaginatedDataTable], new data will be
+  /// fetched as soon as [getRow] is called.
+  void clearData() {
+    _data.clear();
+    _filteredData.clear();
+    _fetchedAllDocuments = false;
+    notifyListeners();
+  }
+
   void changeQuery(Query<T> newQuery) {
     _query = newQuery;
     _data.clear();
