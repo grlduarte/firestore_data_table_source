@@ -1,20 +1,12 @@
 import 'package:flutter/material.dart';
 
-import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firestore_data_table_source/firestore_data_table_source.dart';
 
-import 'firebase_options.dart';
 import 'user.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  runApp(const MyApp());
-}
+void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -42,7 +34,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  static final firestore = FirebaseFirestore.instance;
+  static final firestore = FakeFirebaseFirestore();
   static final usersRef = firestore.collection('users').withConverter<User>(
         fromFirestore: (snapshot, _) => User.fromJson(snapshot.data()!),
         toFirestore: (user, _) => user.toJson(),
@@ -71,6 +63,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void dispose() {
     _filterController.dispose();
+    firestore.clearPersistence();
     super.dispose();
   }
 
