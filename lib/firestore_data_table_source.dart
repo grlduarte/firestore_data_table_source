@@ -37,9 +37,7 @@ class FirestoreDataTableSource<T> extends DataTableSource {
         _filter = filter;
 
   @override
-  int get rowCount => isRowCountApproximate
-      ? _filteredData.length + pageSize
-      : _filteredData.length;
+  int get rowCount => _filteredData.length;
 
   @override
   bool get isRowCountApproximate => !_fetchedAllDocuments;
