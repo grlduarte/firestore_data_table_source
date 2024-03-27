@@ -34,7 +34,8 @@ class FirestoreDataTableSource<T> extends DataTableSource {
     this.pageSize = 10,
     FilterRow<T>? filter,
   })  : _query = query,
-        _filter = filter;
+        _filter = filter,
+        assert(pageSize > 0);
 
   @override
   int get rowCount => _filteredData.length;
