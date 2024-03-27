@@ -34,12 +34,11 @@ class FirestoreDataTableSource<T> extends DataTableSource {
     this.pageSize = 10,
     FilterRow<T>? filter,
   })  : _query = query,
-        _filter = filter;
+        _filter = filter,
+        assert(pageSize > 0);
 
   @override
-  int get rowCount => isRowCountApproximate
-      ? _filteredData.length + pageSize
-      : _filteredData.length;
+  int get rowCount => _filteredData.length;
 
   @override
   bool get isRowCountApproximate => !_fetchedAllDocuments;
@@ -47,22 +46,25 @@ class FirestoreDataTableSource<T> extends DataTableSource {
   @override
   int get selectedRowCount => 0;
 
-  void _fetchData() async {
+  void _fetchData(int index) async {
     if (_fetching) return;
 
     if (_fetchedAllDocuments) return;
 
     _fetching = true;
-    final queryCount = 2 * pageSize;
     Query<T> pageQuery = _query;
 
     if (_data.isNotEmpty) {
       pageQuery = pageQuery.startAfterDocument(_data.last);
     }
 
+    int queryCount = 2 * pageSize;
+    if (index - _data.length >= pageSize) {
+      queryCount += index - _data.length;
+    }
     pageQuery = pageQuery.limit(queryCount);
-    final QuerySnapshot<T> querySnapshot = await pageQuery.get();
 
+    final QuerySnapshot<T> querySnapshot = await pageQuery.get();
     _data.addAll(querySnapshot.docs);
     _applyFilter();
 
@@ -116,7 +118,7 @@ class FirestoreDataTableSource<T> extends DataTableSource {
   @override
   DataRow? getRow(int index) {
     // Load more items before getting to the end of the list
-    if (index > _filteredData.length - pageSize) _fetchData();
+    if (index >= _filteredData.length - pageSize) _fetchData(index);
 
     if (index >= _filteredData.length) {
       return null;
