@@ -58,7 +58,7 @@ class FirestoreDataTableSource<T> extends DataTableSource {
     }
 
     int queryCount = 2 * pageSize;
-    if (index - _data.length > pageSize) {
+    if (index - _data.length >= pageSize) {
       queryCount += index - _data.length;
     }
     pageQuery = pageQuery.limit(queryCount);
@@ -117,7 +117,7 @@ class FirestoreDataTableSource<T> extends DataTableSource {
   @override
   DataRow? getRow(int index) {
     // Load more items before getting to the end of the list
-    if (index > _filteredData.length - pageSize) _fetchData(index);
+    if (index >= _filteredData.length - pageSize) _fetchData(index);
 
     if (index >= _filteredData.length) {
       return null;
