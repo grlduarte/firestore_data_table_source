@@ -14,20 +14,24 @@ Future<void> populateFirestore(
 }
 
 void main() async {
-  const pageSize = 10;
+  final pageSizes = <int>[1, 2, 10];
 
-  group('When created', () => firstInitialized(pageSize));
+  for (int pageSize in pageSizes) {
+    group('With page size of $pageSize row(s),', () {
+      group('when created', () => firstInitialized(pageSize));
 
-  group('When no data is available', () => noDataIsAvailable(pageSize));
+      group('when no data is available', () => noDataIsAvailable(pageSize));
 
-  group('When ${2 * pageSize} rows are available',
-      () => twoPagesAreAvailable(pageSize));
+      group('when ${2 * pageSize} rows are available',
+          () => twoPagesAreAvailable(pageSize));
 
-  group('When ${4 * pageSize} rows are available',
-      () => fourPagesAreAvailable(pageSize));
+      group('when ${4 * pageSize} rows are available',
+          () => fourPagesAreAvailable(pageSize));
 
-  group('When data is filtered with no results',
-      () => dataIsFilteredWithNoResults(pageSize));
+      group('when data is filtered with no results',
+          () => dataIsFilteredWithNoResults(pageSize));
+    });
+  }
 }
 
 void firstInitialized(int pageSize) {
