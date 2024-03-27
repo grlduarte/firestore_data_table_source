@@ -1,20 +1,12 @@
 import 'package:flutter/material.dart';
 
-import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firestore_data_table_source/firestore_data_table_source.dart';
 
-import 'firebase_options.dart';
 import 'user.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  runApp(const MyApp());
-}
+void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -42,14 +34,17 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final int rowsPerPage = 15;
-  final Query<User> baseQuery = usersRef;
-  final TextEditingController _filterController = TextEditingController();
-  final GlobalKey<PaginatedDataTableState> _dataTableKey =
-      GlobalKey<PaginatedDataTableState>();
+  static final firestore = FakeFirebaseFirestore();
+  static final usersRef = firestore.collection('users').withConverter<User>(
+        fromFirestore: (snapshot, _) => User.fromJson(snapshot.data()!),
+        toFirestore: (user, _) => user.toJson(),
+      );
+
+  final int rowsPerPage = 10;
+  final _filterController = TextEditingController();
+  final _dataTableKey = GlobalKey<PaginatedDataTableState>();
 
   late FirestoreDataTableSource<User> _dataSource;
-  late Query<User> query;
 
   int? _sortColumn;
   bool _sortAscending = false;
@@ -58,10 +53,8 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
 
-    query = baseQuery;
-
     _dataSource = FirestoreDataTableSource<User>(
-      query: query,
+      query: usersRef,
       getDataRow: getDataRow,
       pageSize: rowsPerPage,
     );
@@ -70,6 +63,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void dispose() {
     _filterController.dispose();
+    firestore.clearPersistence();
     super.dispose();
   }
 
@@ -81,7 +75,6 @@ class _MyHomePageState extends State<MyHomePage> {
         DataCell(Text(snapshot.id)),
         DataCell(Text(user.name)),
         DataCell(Text(user.lastName)),
-        DataCell(Text(user.birthday.toString())),
       ],
     );
   }
@@ -92,32 +85,21 @@ class _MyHomePageState extends State<MyHomePage> {
       _sortAscending = ascending;
     });
 
-    switch (columnIndex) {
-      case 0:
-        // UserId column
-        query = baseQuery.orderBy(
-          FieldPath.documentId,
-          descending: ascending,
-        );
-        break;
+    Query<User>? query;
 
+    switch (columnIndex) {
       case 1:
         // Name column
-        query = baseQuery.orderBy('name', descending: ascending);
+        query = usersRef.orderBy('name', descending: ascending);
         break;
 
       case 2:
         // LastName column
-        query = baseQuery.orderBy('lastName', descending: ascending);
-        break;
-
-      case 3:
-        // Birthday column
-        query = baseQuery.orderBy('birthday', descending: ascending);
+        query = usersRef.orderBy('lastName', descending: ascending);
         break;
     }
 
-    _dataSource.changeQuery(query);
+    if (query != null) _dataSource.changeQuery(query);
   }
 
   void onNameFilterChanged(String text) {
@@ -140,12 +122,23 @@ class _MyHomePageState extends State<MyHomePage> {
     _filterController.clear();
   }
 
+  Future<void> populateFirestore({int numberOfUsers = 20}) async {
+    final batch = firestore.batch();
+
+    for (int i = 0; i < numberOfUsers; i++) {
+      final user = User.fake();
+      final userRef = usersRef.doc();
+      batch.set(userRef, user);
+    }
+
+    return batch.commit();
+  }
+
   @override
   Widget build(BuildContext context) {
     final columns = <DataColumn>[
-      DataColumn(
-        label: const Text('User Id'),
-        onSort: onSort,
+      const DataColumn(
+        label: Text('User Id'),
       ),
       DataColumn(
         label: const Text('Name'),
@@ -153,10 +146,6 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       DataColumn(
         label: const Text('Last Name'),
-        onSort: onSort,
-      ),
-      DataColumn(
-        label: const Text('Birthday'),
         onSort: onSort,
       ),
     ];
@@ -174,6 +163,21 @@ class _MyHomePageState extends State<MyHomePage> {
             key: _dataTableKey,
             source: _dataSource,
             columns: columns,
+            actions: <Widget>[
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                tooltip: "Refresh data",
+                onPressed: () => _dataSource.clearData(),
+              ),
+              IconButton(
+                icon: const Icon(Icons.add),
+                tooltip: "Add users and refresh",
+                onPressed: () async {
+                  populateFirestore(numberOfUsers: rowsPerPage);
+                  _dataSource.clearData();
+                },
+              ),
+            ],
             header: TextField(
               controller: _filterController,
               decoration: InputDecoration(

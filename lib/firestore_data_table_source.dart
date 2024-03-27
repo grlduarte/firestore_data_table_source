@@ -53,21 +53,35 @@ class FirestoreDataTableSource<T> extends DataTableSource {
     if (_fetchedAllDocuments) return;
 
     _fetching = true;
-    Query<T> pageQuery = _query.limit(pageSize);
+    final queryCount = 2 * pageSize;
+    Query<T> pageQuery = _query;
 
     if (_data.isNotEmpty) {
       pageQuery = pageQuery.startAfterDocument(_data.last);
     }
 
+    pageQuery = pageQuery.limit(queryCount);
     final QuerySnapshot<T> querySnapshot = await pageQuery.get();
+
     _data.addAll(querySnapshot.docs);
     _applyFilter();
 
-    if (querySnapshot.docs.length < pageSize) {
+    if (querySnapshot.docs.length < queryCount) {
       _fetchedAllDocuments = true;
     }
 
     _fetching = false;
+    notifyListeners();
+  }
+
+  /// Clear all loaded data
+  ///
+  /// Note that when associated with [PaginatedDataTable], new data will be
+  /// fetched as soon as [getRow] is called.
+  void clearData() {
+    _data.clear();
+    _filteredData.clear();
+    _fetchedAllDocuments = false;
     notifyListeners();
   }
 
