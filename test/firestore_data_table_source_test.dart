@@ -14,9 +14,15 @@ Future<void> populateFirestore(
 }
 
 void main() async {
-  final pageSizes = <int>[1, 2, 10];
+  final pageSizes = <int>[-1, 0, 1, 2, 10];
 
   for (int pageSize in pageSizes) {
+    if (pageSize <= 0) {
+      group('When created with page size of $pageSize',
+          () => createdWithInvalidPageSize(pageSize));
+      continue;
+    }
+
     group('With page size of $pageSize row(s),', () {
       group('when created', () => firstInitialized(pageSize));
 
@@ -32,6 +38,19 @@ void main() async {
           () => dataIsFilteredWithNoResults(pageSize));
     });
   }
+}
+
+void createdWithInvalidPageSize(int pageSize) {
+  final firestore = FakeFirebaseFirestore();
+  FirestoreDataTableSource createSut() => FirestoreDataTableSource(
+        query: firestore.collection('lorem'),
+        getDataRow: (snapshot) => const DataRow(cells: []),
+        pageSize: pageSize,
+      );
+
+  test('it should raise an assertion error', () {
+    expect(() => createSut(), throwsAssertionError);
+  });
 }
 
 void firstInitialized(int pageSize) {
