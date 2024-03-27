@@ -25,6 +25,9 @@ void main() async {
 
   group('When ${4 * pageSize} rows are available',
       () => fourPagesAreAvailable(pageSize));
+
+  group('When data is filtered with no results',
+      () => dataIsFilteredWithNoResults(pageSize));
 }
 
 void firstInitialized(int pageSize) {
@@ -164,6 +167,53 @@ void fourPagesAreAvailable(int pageSize) {
     test('row count should be ${4 * pageSize}',
         () => expect(sut.rowCount, 4 * pageSize));
     test('row count should be approximate',
+        () => expect(sut.isRowCountApproximate, false));
+  });
+}
+
+void dataIsFilteredWithNoResults(int pageSize) {
+  late FirestoreDataTableSource sut;
+  final firestore = FakeFirebaseFirestore();
+
+  setUp(() async {
+    sut = FirestoreDataTableSource(
+      query: firestore.collection('lorem'),
+      getDataRow: (snapshot) => const DataRow(cells: []),
+      filter: (snapshot) => false,
+      pageSize: pageSize,
+    );
+    await populateFirestore(firestore.collection('lorem'), 2 * pageSize);
+  });
+
+  tearDown(() => firestore.clearPersistence());
+
+  group('and first row is requested,', () {
+    setUp(() => sut.getRow(0));
+
+    test('it should be null', () => expect(sut.getRow(0), null));
+    test('row count should be 0', () => expect(sut.rowCount, 0));
+    test('row count should be approximate',
+        () => expect(sut.isRowCountApproximate, true));
+  });
+
+  group('and a full page is requested,', () {
+    setUp(() => sut.getRow(pageSize + 1));
+
+    test('first row should be null', () => expect(sut.getRow(0), null));
+    test('row count should be 0', () => expect(sut.rowCount, 0));
+    test('row count should not be approximate',
+        () => expect(sut.isRowCountApproximate, false));
+  });
+
+  group('and the filter is removed after a full page is requested,', () {
+    setUp(() {
+      sut.getRow(pageSize + 1);
+      sut.clearFilter();
+    });
+
+    test('row count should be ${2 * pageSize}',
+        () => expect(sut.rowCount, 2 * pageSize));
+    test('row count should not be approximate',
         () => expect(sut.isRowCountApproximate, false));
   });
 }
